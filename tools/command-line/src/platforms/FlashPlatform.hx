@@ -16,7 +16,24 @@ class FlashPlatform implements IPlatformTool {
 		var hxml = project.app.path + "/flash/haxe/" + (project.debug ? "debug" : "release") + ".hxml";
 		
 		ProcessHelper.runCommand ("", "haxe", [ hxml ] );
-		FlashHelper.embedAssets (destination + "/" + project.app.file + ".swf", project.assets);
+		
+		var usesNME = false;
+		
+		for (haxelib in project.haxelibs) {
+			
+			if (haxelib.name == "nme") {
+				
+				usesNME = true;
+				
+			}
+			
+		}
+		
+		if (usesNME) {
+			
+			FlashHelper.embedAssets (destination + "/" + project.app.file + ".swf", project.assets, "nme.");
+			
+		}
 		
 		if (project.targetFlags.exists ("web") || project.app.url != "") {
 			
@@ -58,12 +75,11 @@ class FlashPlatform implements IPlatformTool {
 		
 		project = project.clone ();
 		
-		//if (project.targetFlags.exists ("air")) {
+		if (project.targetFlags.exists ("xml")) {
 			
-			//AIRHelper.initialize (defines, targetFlags, target, NME);
-			//project.haxeflags.push ("-lib air3");
+			project.haxeflags.push ("-xml " + project.app.path + "/flash/types.xml");
 			
-		//}
+		}
 		
 		var context = project.templateContext;
 		context.WIN_FLASHBACKGROUND = StringTools.hex (project.window.background);

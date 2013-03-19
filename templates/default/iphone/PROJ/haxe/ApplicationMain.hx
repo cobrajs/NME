@@ -1,3 +1,7 @@
+#if (!macro || !haxe3)
+import nme.Assets;
+
+
 class ApplicationMain
 {
 	
@@ -29,11 +33,13 @@ class ApplicationMain
 		
 		nme.Lib.create(function()
 			{
-				if (::WIN_WIDTH:: == 0 && ::WIN_HEIGHT:: == 0)
-				{
+				//if (::WIN_WIDTH:: == 0 && ::WIN_HEIGHT:: == 0)
+				//{
 					nme.Lib.current.stage.align = nme.display.StageAlign.TOP_LEFT;
 					nme.Lib.current.stage.scaleMode = nme.display.StageScaleMode.NO_SCALE;
-				}
+				//}
+				
+				nme.Lib.current.loaderInfo = nme.display.LoaderInfo.create (null);
 				
 				//nme.Lib.current.stage.addEventListener (nme.events.Event.RESIZE, initialize);
 				initialize ();
@@ -60,7 +66,7 @@ class ApplicationMain
 		//nme.Lib.current.stage.removeEventListener (nme.events.Event.RESIZE, initialize);
 		
 		var hasMain = false;
-				
+		
 		for (methodName in Type.getClassFields(::APP_MAIN::))
 		{
 			if (methodName == "main")
@@ -76,32 +82,39 @@ class ApplicationMain
 		}
 		else
 		{
-			nme.Lib.current.addChild(cast (Type.createInstance(::APP_MAIN::, []), nme.display.DisplayObject));	
+			nme.Lib.current.addChild(cast (Type.createInstance(DocumentClass, []), nme.display.DisplayObject));	
 		}
 	}
 	
+}
+
+
+#if haxe3 @:build(DocumentClass.build()) #end
+class DocumentClass extends ::APP_MAIN:: { }
+
+#else
+
+import haxe.macro.Context;
+import haxe.macro.Expr;
+
+class DocumentClass {
 	
-	public static function getAsset(inName:String):Dynamic
-	{
-		::foreach assets::
-		if (inName == "::id::")
-		{
-			::if (type == "image")::
-			return nme.Assets.getBitmapData ("::id::");
-			::elseif (type == "sound")::
-			return nme.Assets.getSound ("::id::");
-			::elseif (type == "music")::
-			return nme.Assets.getSound ("::id::");
-			::elseif (type == "font")::
-			return nme.Assets.getFont ("::id::");
-			::elseif (type == "text")::
-			return nme.Assets.getText ("::id::");
-			::else::
-			return nme.Assets.getBytes ("::id::");
-			::end::
+	macro public static function build ():Array<Field> {
+		var classType = Context.getLocalClass().get();
+		var searchTypes = classType;
+		while (searchTypes.superClass != null) {
+			if (searchTypes.pack.length == 2 && searchTypes.pack[1] == "display" && searchTypes.name == "DisplayObject") {
+				var fields = Context.getBuildFields();
+				var method = macro {
+					return nme.Lib.current.stage;
+				}
+				fields.push ({ name: "get_stage", access: [ APrivate, AOverride ], kind: FFun({ args: [], expr: method, params: [], ret: macro :nme.display.Stage }), pos: Context.currentPos() });
+				return fields;
+			}
+			searchTypes = searchTypes.superClass.t.get();
 		}
-		::end::
 		return null;
 	}
 	
 }
+#end

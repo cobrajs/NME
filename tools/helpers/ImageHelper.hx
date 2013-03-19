@@ -12,7 +12,7 @@ class ImageHelper {
 		
 		if (backgroundColor == null) {
 			
-			backgroundColor = #if neko { a: 0, rgb: 0xFFFFFF }; #else backgroundColor = 0x00FFFFFF; #end
+			backgroundColor = #if (!neko || (haxe3 && !neko_v1)) 0x00FFFFFF #else { rgb: 0xFFFFFF, a: 0x00 } #end;
 			
 		}
 		
@@ -35,7 +35,7 @@ class ImageHelper {
 		bitmap.width = width;
 		bitmap.height = height;
 		
-		var data = new BitmapData (width, height, true, { a: 0, rgb: 0xFFFFFF });
+		var data = new BitmapData (width, height, true, #if (!neko || (haxe3 && !neko_v1)) 0x00FFFFFF #else { rgb: 0xFFFFFF, a: 0x00 } #end);
 		data.draw (bitmap);
 		
 		return data;

@@ -1,5 +1,5 @@
 -main CommandLineTools
--neko command-line.n
+-neko ../../command-line.n
 -cp src
 -cp ../helpers
 -cp ../project
@@ -10,4 +10,4 @@
 -lib xfl
 --remap flash:nme
 --remap browser:native
--D hxssl
+-D nme_ver=3.6.0

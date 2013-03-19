@@ -16,12 +16,17 @@ import browser.geom.Rectangle;
 import browser.gl.GLTexture;
 import browser.utils.ByteArray;
 import browser.utils.Uuid;
-import browser.Html5Dom;
 import browser.Lib;
 import haxe.xml.Check;
+import js.html.CanvasElement;
+import js.html.CanvasRenderingContext2D;
+import js.html.ImageData;
+import js.html.ImageElement;
+import js.html.Uint8ClampedArray;
+import js.Browser;
 
 
-
+@:autoBuild(nme.Assets.embedBitmap())
 class BitmapData implements IBitmapDrawable {
 	
 	
@@ -41,10 +46,10 @@ class BitmapData implements IBitmapDrawable {
 	private var nmeLeaseNum:Int;
 	private var nmeLocked:Bool;
 	private var nmeTransparent:Bool;
-	private var nmeTransparentFiller:HTMLCanvasElement;
+	private var nmeTransparentFiller:CanvasElement;
 	
 	private var _nmeId:String;
-	private var _nmeTextureBuffer:HTMLCanvasElement;
+	private var _nmeTextureBuffer:CanvasElement;
 	
 	
 	public function new(width:Int, height:Int, transparent:Bool = true, inFillColor:Int = 0xFFFFFFFF) {
@@ -55,7 +60,7 @@ class BitmapData implements IBitmapDrawable {
 		nmeLease = new ImageDataLease();
 		nmeBuildLease();
 		
-		_nmeTextureBuffer = cast Lib.document.createElement('canvas');
+		_nmeTextureBuffer = cast Browser.document.createElement('canvas');
 		_nmeTextureBuffer.width = width;
 		_nmeTextureBuffer.height = height;
 		_nmeId = Uuid.uuid();
@@ -66,7 +71,7 @@ class BitmapData implements IBitmapDrawable {
 		
 		if (nmeTransparent) {
 			
-			nmeTransparentFiller = cast Lib.document.createElement('canvas');
+			nmeTransparentFiller = cast Browser.document.createElement('canvas');
 			nmeTransparentFiller.width = width;
 			nmeTransparentFiller.height = height;
 			
@@ -91,6 +96,13 @@ class BitmapData implements IBitmapDrawable {
 	public function applyFilter(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, filter:BitmapFilter):Void {
 		
 		trace("BitmapData.applyFilter not implemented");
+		
+	}
+	
+	
+	public function clear (color:Int):Void {
+		
+		fillRect (rect, color);
 		
 	}
 	
@@ -468,18 +480,18 @@ class BitmapData implements IBitmapDrawable {
 	}
 	
 	
-	public function floodFill(x:Int, y:Int, color:Int):Void {
-		
-		trace("BitmapData.floodFill not implemented");
-		
-	}
+	public function floodFill(x:Int, y:Int, color:Int):Void
+   {
+	   //nmeFloodFill (x, y, color, getPixel32(x, y));
+	   clear(color);
+   }
 	
 	
 	public function getColorBoundsRect(mask:Int, color:Int, findColor:Bool = true):Rectangle {
 		
 		var me = this;
 		
-		var doGetColorBoundsRect = function(data:CanvasPixelArray) {
+		var doGetColorBoundsRect = function(data:Uint8ClampedArray) {
 			
 			var minX = me.width, maxX = 0, minY = me.height, maxY = 0, i = 0;
 			
@@ -549,7 +561,7 @@ class BitmapData implements IBitmapDrawable {
 	}
 	
 	
-	private function getInt32(offset:Int, data:CanvasPixelArray) {
+	private function getInt32(offset:Int, data:Uint8ClampedArray) {
 		
 		// code to deal with 31-bit ints.
 		
@@ -783,58 +795,9 @@ class BitmapData implements IBitmapDrawable {
 	
 	public static function loadFromBytes(bytes:ByteArray, inRawAlpha:ByteArray = null, onload:BitmapData -> Void) {
 		
-		var type = "";
-		
-		if (nmeIsPNG(bytes)) {
-			
-			type = "image/png";
-			
-		} else if (nmeIsJPG(bytes)) {
-			
-			type = "image/jpeg";
-			
-		} else {
-			
-			throw new IOError("BitmapData tried to read a PNG/JPG ByteArray, but found an invalid header.");
-			
-		}
-		
-		var img:HTMLImageElement = cast Lib.document.createElement("img");
 		var bitmapData = new BitmapData(0, 0);
-		var canvas = bitmapData._nmeTextureBuffer;
-		
-		var drawImage = function(_) {
-			
-			canvas.width = img.width;
-			canvas.height = img.height;
-			
-			var ctx = canvas.getContext('2d');
-			ctx.drawImage(img, 0, 0);
-			
-			if (inRawAlpha != null) {
-				
-				var pixels = ctx.getImageData(0, 0, img.width, img.height);
-				
-				for (i in 0...inRawAlpha.length) {
-					
-					pixels.data[i * 4 + 3] = inRawAlpha.readUnsignedByte();
-					
-				}
-				
-				ctx.putImageData(pixels, 0, 0);
-				
-			}
-			
-			onload(bitmapData);
-			
-		}
-		
-		img.addEventListener("load", drawImage, false);
-		#if haxe3
-		img.src = 'data:$type;base64,${nmeBase64Encode(bytes)}';
-		#else
-		img.src = Std.format("data:$type;base64,${nmeBase64Encode(bytes)}");
-		#end
+		bitmapData.nmeLoadFromBytes(bytes, inRawAlpha, onload);
+		return bitmapData;
 		
 	}
 	
@@ -918,7 +881,7 @@ class BitmapData implements IBitmapDrawable {
 	}
 	
 	
-	public static function nmeCreateFromHandle(inHandle:HTMLCanvasElement):BitmapData {
+	public static function nmeCreateFromHandle(inHandle:CanvasElement):BitmapData {
 		
 		var result = new BitmapData(0, 0);
 		result._nmeTextureBuffer = inHandle;
@@ -991,9 +954,91 @@ class BitmapData implements IBitmapDrawable {
 	}
 	
 	
+	private function nmeFloodFill(x:Int, y:Int, color:Int, replaceColor:Int):Void
+   {
+	   if (getPixel32(x, y) == replaceColor) {
+		   
+		   setPixel32(x, y, color);
+		   nmeFloodFill(x + 1, y, color, replaceColor);
+		   nmeFloodFill(x + 1, y + 1, color, replaceColor);
+		   nmeFloodFill(x + 1, y - 1, color, replaceColor);
+		   nmeFloodFill(x - 1, y, color, replaceColor);
+		   nmeFloodFill(x - 1, y + 1, color, replaceColor);
+		   nmeFloodFill(x - 1, y - 1, color, replaceColor);
+		   nmeFloodFill(x, y + 1, color, replaceColor);
+		   nmeFloodFill(x, y - 1, color, replaceColor);
+		   
+	   }
+   }
+	
+	
 	public inline function nmeGetLease():ImageDataLease {
 		
 		return nmeLease;
+		
+	}
+	
+	
+	private inline function nmeLoadFromBytes(bytes:ByteArray, inRawAlpha:ByteArray = null, ?onload:BitmapData -> Void) {
+		
+		var type = "";
+		
+		if (nmeIsPNG(bytes)) {
+			
+			type = "image/png";
+			
+		} else if (nmeIsJPG(bytes)) {
+			
+			type = "image/jpeg";
+			
+		} else {
+			
+			throw new IOError("BitmapData tried to read a PNG/JPG ByteArray, but found an invalid header.");
+			
+		}
+		
+		var img:ImageElement = cast Browser.document.createElement("img");
+		var canvas = _nmeTextureBuffer;
+		
+		var drawImage = function(_) {
+			
+			canvas.width = img.width;
+			canvas.height = img.height;
+			
+			var ctx = canvas.getContext('2d');
+			ctx.drawImage(img, 0, 0);
+			
+			if (inRawAlpha != null) {
+				
+				var pixels = ctx.getImageData(0, 0, img.width, img.height);
+				
+				for (i in 0...inRawAlpha.length) {
+					
+					pixels.data[i * 4 + 3] = inRawAlpha.readUnsignedByte();
+					
+				}
+				
+				ctx.putImageData(pixels, 0, 0);
+				
+			}
+			
+			rect = new Rectangle (0, 0, canvas.width, canvas.height);
+			
+			if (onload != null) {
+				
+				onload(this);
+				
+			}
+			
+		}
+		
+		img.addEventListener("load", drawImage, false);
+		
+		#if haxe3
+		img.src = 'data:$type;base64,${nmeBase64Encode(bytes)}';
+		#else
+		img.src = Std.format("data:$type;base64,${nmeBase64Encode(bytes)}");
+		#end
 		
 	}
 	
@@ -1015,9 +1060,10 @@ class BitmapData implements IBitmapDrawable {
 	private static function nmeIsJPG(bytes:ByteArray) {
 		
 		bytes.position = 0;
-		
-		if (bytes.readByte() == 0xFF && bytes.readByte() == 0xD8 && bytes.readByte() == 0xFF && bytes.readByte() == 0xE0) {
+		return bytes.readByte() == 0xFF && bytes.readByte() == 0xD8;
+		/*if (bytes.readByte() == 0xFF && bytes.readByte() == 0xD8 && bytes.readByte() == 0xFF) {
 			
+			bytes.readByte();
 			bytes.readByte();
 			bytes.readByte();
 			
@@ -1030,7 +1076,7 @@ class BitmapData implements IBitmapDrawable {
 		}
 		
 		return false;
-		
+        */
 	}
 	
 	
@@ -1044,7 +1090,7 @@ class BitmapData implements IBitmapDrawable {
 	
 	public function nmeLoadFromFile(inFilename:String, inLoader:LoaderInfo = null) {
 		
-		var image:HTMLImageElement = cast Lib.document.createElement("img");
+		var image:ImageElement = cast Browser.document.createElement("img");
 		
 		if (inLoader != null) {
 			
@@ -1311,7 +1357,7 @@ class BitmapData implements IBitmapDrawable {
 	
 	private function nmeOnLoad(data:LoadData, e) {
 		
-		var canvas:HTMLCanvasElement = cast data.texture;
+		var canvas:CanvasElement = cast data.texture;
 		var width = data.image.width;
 		var height = data.image.height;
 		canvas.width = width;
@@ -1387,8 +1433,8 @@ class BitmapData implements IBitmapDrawable {
 
 typedef LoadData = {
 	
-	var image:HTMLImageElement;
-	var texture:HTMLCanvasElement;
+	var image:ImageElement;
+	var texture:CanvasElement;
 	var inLoader:Null<LoaderInfo>;
 	var bitmapData:BitmapData;
 	
@@ -1432,8 +1478,8 @@ class ImageDataLease {
 
 typedef CopyPixelAtom = {
 	
-	var handle:HTMLCanvasElement;
-	var transparentFiller:HTMLCanvasElement;
+	var handle:CanvasElement;
+	var transparentFiller:CanvasElement;
 	var sourceX:Float;
 	var sourceY:Float;
 	var sourceWidth:Float;

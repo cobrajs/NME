@@ -8,8 +8,11 @@ import browser.events.HTTPStatusEvent;
 import browser.events.IOErrorEvent;
 import browser.events.ProgressEvent;
 import browser.errors.IOError;
+import browser.events.SecurityErrorEvent;
 import browser.utils.ByteArray;
-import browser.Html5Dom;
+import js.html.EventTarget;
+import js.html.XMLHttpRequest;
+import js.Browser;
 import js.Lib;
 
 
@@ -19,7 +22,18 @@ class URLLoader extends EventDispatcher {
 	public var bytesLoaded:Int;
 	public var bytesTotal:Int;
 	public var data:Dynamic;
-	public var dataFormat:URLLoaderDataFormat;
+	public var dataFormat(default, set):URLLoaderDataFormat;
+	private function set_dataFormat(inputVal:URLLoaderDataFormat):URLLoaderDataFormat {
+		// prevent inadvertently using typed arrays when they are unsupported
+		// @todo move these sorts of tests somewhere common in the vein of Modernizr
+		if (inputVal == URLLoaderDataFormat.BINARY
+				&& !Reflect.hasField(Browser.window, "ArrayBuffer")) {
+			dataFormat = URLLoaderDataFormat.TEXT;
+		} else {
+			dataFormat = inputVal;
+		}
+		return dataFormat;
+	}
 	
 	
 	public function new(request:URLRequest = null) {
@@ -55,23 +69,7 @@ class URLLoader extends EventDispatcher {
 	
 	public function load(request:URLRequest):Void {
 		
-		switch (dataFormat) {
-			
-			case BINARY:
-				
-				request.requestHeaders.push(new URLRequestHeader("Content-Type", "application/octet-stream"));
-			
-			default:
-				
-				if (request.method != "GET") {
-					
-					request.requestHeaders.push(new URLRequestHeader("Content-Type", "application/x-www-form-urlencoded"));
-					
-				}
-			
-		}
-		
-		requestUrl(request.url, request.method, request.data, request.requestHeaders);
+		requestUrl(request.url, request.method, request.data, request.formatRequestHeaders());
 		
 	}
 	
@@ -103,6 +101,8 @@ class URLLoader extends EventDispatcher {
 				
 			}
 			
+			//js.Lib.alert (s);
+			
 			if (s != null && s >= 200 && s < 400) {
 				
 				self.onData(subject.response);
@@ -120,6 +120,11 @@ class URLLoader extends EventDispatcher {
 				} else if (s == 12007) {
 					
 					self.onError("Unknown host");
+					
+				} else if (s == 0) {
+					
+					self.onError("Unable to make request (may be blocked due to cross-domain permissions)");
+					self.onSecurityError("Unable to make request (may be blocked due to cross-domain permissions)");
 					
 				} else {
 					
@@ -182,6 +187,7 @@ class URLLoader extends EventDispatcher {
 				
 			} else {
 				
+				//js.Lib.alert ("open: " + method + ", " + url + ", true");
 				xmlHttpRequest.open(method, url, true);
 				
 			}
@@ -193,6 +199,8 @@ class URLLoader extends EventDispatcher {
 			
 		}
 		
+		//js.Lib.alert ("dataFormat: " + dataFormat);
+		
 		switch (dataFormat) {
 			
 			case BINARY: untyped xmlHttpRequest.responseType = 'arraybuffer';
@@ -202,9 +210,12 @@ class URLLoader extends EventDispatcher {
 		
 		for (header in requestHeaders) {
 			
+			//js.Lib.alert ("setRequestHeader: " + header.name + ", " + header.value);
 			xmlHttpRequest.setRequestHeader(header.name, header.value);
 			
 		}
+		
+		//js.Lib.alert ("uri: " + uri);
 		
 		xmlHttpRequest.send(uri);
 		onOpen();
@@ -276,6 +287,16 @@ class URLLoader extends EventDispatcher {
 		evt.currentTarget = this;
 		evt.bytesLoaded = event.loaded;
 		evt.bytesTotal = event.total;
+		dispatchEvent(evt);
+		
+	}
+	
+	
+	private function onSecurityError(msg:String):Void {
+		
+		var evt = new SecurityErrorEvent(SecurityErrorEvent.SECURITY_ERROR);
+		evt.text = msg;
+		evt.currentTarget = this;
 		dispatchEvent(evt);
 		
 	}

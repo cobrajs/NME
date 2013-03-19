@@ -27,7 +27,7 @@ class NekoHelper {
 		#if haxe3
 		output.writeInt32 (executable.length);
 		#else
-		output.writeUInt30 (executable.length);
+		output.writeInt31 (executable.length);
 		#end
 		output.close ();
 		

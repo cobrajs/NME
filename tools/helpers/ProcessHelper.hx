@@ -48,7 +48,7 @@ class ProcessHelper {
 			
 			if (executable == "") {
 				
-				executable = "open";
+				executable = "/usr/bin/open";
 				
 			}
 			
@@ -66,7 +66,7 @@ class ProcessHelper {
 			
 			if (executable == "") {
 				
-				executable = "xdg-open";
+				executable = "/usr/bin/xdg-open";
 				
 			}
 			
@@ -93,11 +93,11 @@ class ProcessHelper {
 			
 		} else if (PlatformHelper.hostPlatform == Platform.MAC) {
 			
-			runCommand ("", "open", [ url ]);
+			runCommand ("", "/usr/bin/open", [ url ]);
 			
 		} else {
 			
-			runCommand ("", "xdg-open", [ url ]);
+			runCommand ("", "/usr/bin/xdg-open", [ url ]);
 			
 		}
 		
@@ -196,6 +196,6 @@ class ProcessHelper {
 		}
 		
 	}
-		
+	
 
 }

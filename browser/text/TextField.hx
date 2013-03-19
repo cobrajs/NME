@@ -14,8 +14,10 @@ import browser.events.FocusEvent;
 import browser.events.KeyboardEvent;
 import browser.text.TextFormatAlign;
 import browser.ui.Keyboard;
-import browser.Html5Dom;
 import browser.Lib;
+import js.html.CanvasElement;
+import js.html.Element;
+import js.Browser;
 
 #if haxe3
 import haxe.ds.StringMap;
@@ -40,7 +42,7 @@ class TextField extends InteractiveObject {
 	public var defaultTextFormat(get_defaultTextFormat, set_defaultTextFormat):TextFormat;
 	public var displayAsPassword:Bool;
 	public var embedFonts:Bool;
-	public var gridFitType:String;
+	public var gridFitType:GridFitType;
 	public var htmlText(get_htmlText, set_htmlText):String;
 	public var length(default, null):Int;
 	public var maxChars:Int;
@@ -128,6 +130,8 @@ class TextField extends InteractiveObject {
 		border = false;
 		backgroundColor = 0xffffff;
 		background = false;
+		gridFitType = GridFitType.PIXEL;
+		sharpness = 0;
 		
 	}
 	
@@ -268,7 +272,7 @@ class TextField extends InteractiveObject {
 	}
 	
 	
-	override public function nmeRender(inMask:HTMLCanvasElement = null, clipRect:Rectangle = null):Void {
+	override public function nmeRender(inMask:CanvasElement = null, clipRect:Rectangle = null):Void {
 		
 		if (!nmeCombinedVisible) return;
 		if (_matrixInvalid || _matrixChainInvalid) nmeValidateMatrix();
@@ -778,7 +782,7 @@ class TextField extends InteractiveObject {
 		mHTMLText = inHTMLText;
 		
 		if (!mHTMLMode) {
-			var domElement:Dynamic = Lib.document.createElement("div");
+			var domElement:Dynamic = Browser.document.createElement("div");
 
 			if (background || border) {
 
@@ -800,7 +804,7 @@ class TextField extends InteractiveObject {
 			}
 
 
-			var wrapper:HTMLCanvasElement = cast domElement;
+			var wrapper:CanvasElement = cast domElement;
 			wrapper.innerHTML = inHTMLText;
 			
 			var destination = new Graphics(wrapper);
@@ -980,7 +984,7 @@ class FontInstance {
 	private var mAlpha:Float;
 	private var mFont:Font;
 	private var mHeight:Int;
-	private var mGlyphs:Array<HTMLElement>;
+	private var mGlyphs:Array<Element>;
 	private var mCacheAsBitmap:Bool;
 	
 	

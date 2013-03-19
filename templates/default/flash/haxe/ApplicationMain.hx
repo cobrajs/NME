@@ -1,17 +1,19 @@
+#if (!macro || !haxe3)
 #if nme
 
 import ::APP_MAIN_PACKAGE::::APP_MAIN_CLASS::;
+import flash.display.DisplayObject;
 import nme.Assets;
 import nme.events.Event;
 
-
 class ApplicationMain {
-	
-	static var mPreloader:NMEPreloader;
 
-	public static function main () {
-		
+	static var mPreloader:::PRELOADER_NAME::;
+
+	public static function main() {
 		var call_real = true;
+		
+		nme.Lib.setPackage("::APP_COMPANY::", "::APP_FILE::", "::APP_PACKAGE::", "::APP_VERSION::");
 		
 		::if (PRELOADER_NAME!="")::
 		var loaded:Int = nme.Lib.current.loaderInfo.bytesLoaded;
@@ -21,14 +23,12 @@ class ApplicationMain {
 		nme.Lib.current.stage.scaleMode = nme.display.StageScaleMode.NO_SCALE;
 		
 		if (loaded < total || true) /* Always wait for event */ {
-			
 			call_real = false;
 			mPreloader = new ::PRELOADER_NAME::();
 			nme.Lib.current.addChild(mPreloader);
 			mPreloader.onInit();
 			mPreloader.onUpdate(loaded,total);
-			nme.Lib.current.addEventListener (nme.events.Event.ENTER_FRAME, onEnter);
-			
+			nme.Lib.current.addEventListener(nme.events.Event.ENTER_FRAME, onEnter);
 		}
 		::end::
 		
@@ -37,7 +37,7 @@ class ApplicationMain {
 		#end
 		
 		if (call_real)
-			begin ();
+			begin();
 	}
 
 	#if !fdb
@@ -45,16 +45,14 @@ class ApplicationMain {
 		var className = pos.className.substr(pos.className.lastIndexOf('.') + 1);
 		var message = className+"::"+pos.methodName+":"+pos.lineNumber+": " + v;
 		
-        if (flash.external.ExternalInterface.available)
+		if (flash.external.ExternalInterface.available)
 			flash.external.ExternalInterface.call("console.log", message);
 		else untyped flash.Boot.__trace(v, pos);
     }
 	#end
-	
-	private static function begin () {
-		
+
+	private static function begin() {
 		var hasMain = false;
-		
 		for (methodName in Type.getClassFields(::APP_MAIN::))
 		{
 			if (methodName == "main")
@@ -63,7 +61,7 @@ class ApplicationMain {
 				break;
 			}
 		}
-		
+
 		if (hasMain)
 		{
 			Reflect.callMethod (::APP_MAIN::, Reflect.field (::APP_MAIN::, "main"), []);
@@ -71,68 +69,31 @@ class ApplicationMain {
 		else
 		{
 			var instance = Type.createInstance(::APP_MAIN::, []);
-			if (Std.is (instance, nme.display.DisplayObject)) {
+			if (Std.is(instance, nme.display.DisplayObject)) {
 				nme.Lib.current.addChild(cast instance);
-			}	
+			}
 		}
-		
 	}
 
-	static function onEnter (_) {
-		
+	static function onEnter(_) {
 		var loaded = nme.Lib.current.loaderInfo.bytesLoaded;
 		var total = nme.Lib.current.loaderInfo.bytesTotal;
 		mPreloader.onUpdate(loaded,total);
 		
 		if (loaded >= total) {
-			
 			nme.Lib.current.removeEventListener(nme.events.Event.ENTER_FRAME, onEnter);
 			mPreloader.addEventListener (Event.COMPLETE, preloader_onComplete);
 			mPreloader.onLoaded();
-			
 		}
-		
 	}
 
-	public static function getAsset (inName:String):Dynamic {
-		
-		::foreach assets::
-		if (inName=="::id::")
-			 ::if (type=="image")::
-            return Assets.getBitmapData ("::id::");
-         ::elseif (type=="sound")::
-            return Assets.getSound ("::id::");
-         ::elseif (type=="music")::
-            return Assets.getSound ("::id::");
-		 ::elseif (type== "font")::
-			 return Assets.getFont ("::id::");
-		 ::elseif (type=="text")::
-			 return Assets.getText ("::id::");
-         ::else::
-            return Assets.getBytes ("::id::");
-         ::end::
-		::end::
-		
-		return null;
-		
-	}
-	
-	
-	private static function preloader_onComplete (event:Event):Void {
-		
+	private static function preloader_onComplete(event:Event):Void {
 		mPreloader.removeEventListener (Event.COMPLETE, preloader_onComplete);
-		
 		nme.Lib.current.removeChild(mPreloader);
 		mPreloader = null;
-		
-		begin ();
-		
+		begin();
 	}
-	
 }
-
-::foreach assets::::if (type == "image")::class NME_::flatName:: extends nme.display.BitmapData { public function new () { super (0, 0); } }::else::class NME_::flatName:: extends ::flashClass:: { }::end::
-::end::
 
 #else
 
@@ -140,7 +101,7 @@ import ::APP_MAIN_PACKAGE::::APP_MAIN_CLASS::;
 
 class ApplicationMain {
 	
-	public static function main () {
+	public static function main() {
 		
 		var hasMain = false;
 		
@@ -155,18 +116,46 @@ class ApplicationMain {
 		
 		if (hasMain)
 		{
-			Reflect.callMethod (::APP_MAIN::, Reflect.field (::APP_MAIN::, "main"), []);
+			Reflect.callMethod(::APP_MAIN::, Reflect.field (::APP_MAIN::, "main"), []);
 		}
 		else
 		{
-			var instance = Type.createInstance(::APP_MAIN::, []);
-			if (Std.is (instance, flash.display.DisplayObject)) {
+			var instance = Type.createInstance(DocumentClass, []);
+			if (Std.is(instance, flash.display.DisplayObject)) {
 				flash.Lib.current.addChild(cast instance);
 			}
 		}
-		
 	}
-
 }
 
+#end
+
+#if haxe3 @:build(DocumentClass.build()) #end
+class DocumentClass extends ::APP_MAIN:: { }
+
+#else
+
+import haxe.macro.Context;
+import haxe.macro.Expr;
+
+class DocumentClass {
+	
+	macro public static function build ():Array<Field> {
+		var classType = Context.getLocalClass().get();
+		var searchTypes = classType;
+		while (searchTypes.superClass != null) {
+			if (searchTypes.pack.length == 2 && searchTypes.pack[1] == "display" && searchTypes.name == "DisplayObject") {
+				var fields = Context.getBuildFields();
+				var method = macro {
+					return flash.Lib.current.stage;
+				}
+				fields.push ({ name: "get_stage", access: [ APrivate ], meta: [ { name: ":getter", params: [ macro stage ], pos: Context.currentPos() } ], kind: FFun({ args: [], expr: method, params: [], ret: macro :flash.display.Stage }), pos: Context.currentPos() });
+				return fields;
+			}
+			searchTypes = searchTypes.superClass.t.get();
+		}
+		return null;
+	}
+	
+}
 #end

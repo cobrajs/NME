@@ -837,7 +837,7 @@ DEFINE_PRIM(nme_get_unique_device_identifier,0);
 
 
 value nme_set_icon( value path ) {
-   printf( "setting icon\n" );
+   //printf( "setting icon\n" );
    #if defined( HX_WINDOWS ) || defined( HX_MACOS )
        SetIcon( val_string( path ) );
    #endif	
@@ -1268,7 +1268,7 @@ DEFINE_PRIM(nme_stage_show_cursor,2);
 
 value nme_stage_get_orientation() {
 
-	#if defined(IPHONE) || defined(ANDROID)
+	#if defined(IPHONE) || defined(ANDROID) || defined(BLACKBERRY)
 		return alloc_int( GetDeviceOrientation() );
 	
 	#else
@@ -3005,7 +3005,7 @@ value nme_bitmap_data_from_bytes(value inRGBBytes, value inAlphaBytes)
    Surface *surface = Surface::LoadFromBytes(bytes.data,bytes.length);
    if (surface)
    {
-      if (inAlphaBytes)
+      if (!val_is_null(inAlphaBytes))
       {
          ByteData alphabytes;
          if (!FromValue(alphabytes,inAlphaBytes))
@@ -3483,13 +3483,13 @@ value nme_sound_from_data(value inData, value inLen, value inForceMusic)
 {
    int length = val_int(inLen);
    Sound *sound;
-   printf("trying bytes with length %d", length);
+  // printf("trying bytes with length %d", length);
    if (!val_is_null(inData) && length > 0) {
       buffer buf = val_to_buffer(inData);
       if (buf == 0) {
          val_throw(alloc_string("Bad ByteArray"));
       }
-      printf("I'm here! trying bytes with length %d", length);
+      //printf("I'm here! trying bytes with length %d", length);
       sound = Sound::Create((unsigned char *)buffer_data(buf), length, val_bool(inForceMusic) );
    } else {
 	   val_throw(alloc_string("Empty ByteArray"));
@@ -3751,7 +3751,8 @@ value nme_tilesheet_add_rect(value inSheet,value inRect, value inHotSpot)
       UserPoint p(0,0);
       if (!val_is_null(inHotSpot))
          FromValue(p,inHotSpot);
-      sheet->addTileRect(rect,p.x,p.y);
+      int tile = sheet->addTileRect(rect,p.x,p.y);
+	  return alloc_int(tile);
    }
    return alloc_null();
 }

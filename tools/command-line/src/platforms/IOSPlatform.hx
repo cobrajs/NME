@@ -55,6 +55,12 @@ class IOSPlatform implements IPlatformTool {
 		project = project.clone ();
 		project.sources = PathHelper.relocatePaths (project.sources, PathHelper.combine (project.app.path, "ios/" + project.app.file + "/haxe"));
 		
+		if (project.targetFlags.exists ("xml")) {
+			
+			project.haxeflags.push ("-xml " + project.app.path + "/ios/types.xml");
+			
+		}
+		
 		var context = project.templateContext;
 		
 		context.HAS_ICON = false;
@@ -290,7 +296,7 @@ class IOSPlatform implements IPlatformTool {
 			
 		}
 		
-		FileHelper.copyFileTemplate (project.templatePaths, "haxe/nme/installer/Assets.hx", projectDirectory + "/haxe/nme/installer/Assets.hx", context);
+		FileHelper.copyFileTemplate (project.templatePaths, "haxe/nme/AssetData.hx", projectDirectory + "/haxe/nme/AssetData.hx", context);
 		FileHelper.recursiveCopyTemplate (project.templatePaths, "iphone/PROJ/haxe", projectDirectory + "/haxe", context);
 		FileHelper.recursiveCopyTemplate (project.templatePaths, "iphone/PROJ/Classes", projectDirectory + "/Classes", context);
         FileHelper.copyFileTemplate (project.templatePaths, "iphone/PROJ/PROJ-Entitlements.plist", projectDirectory + "/" + project.app.file + "-Entitlements.plist", context);

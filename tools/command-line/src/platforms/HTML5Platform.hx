@@ -107,9 +107,15 @@ class HTML5Platform implements IPlatformTool {
 			
 		}
 		
+		if (project.targetFlags.exists ("xml")) {
+			
+			project.haxeflags.push ("-xml " + project.app.path + "/html5/types.xml");
+			
+		}
+		
 		var context = project.templateContext;
 		
-		context.WIN_FLASHBACKGROUND = StringTools.hex (project.window.background);
+		context.WIN_FLASHBACKGROUND = StringTools.hex (project.window.background, 6);
 		context.OUTPUT_DIR = outputDirectory;
 		context.OUTPUT_FILE = outputFile;
 		

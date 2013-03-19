@@ -3,14 +3,13 @@ package;
 
 import haxe.io.Bytes;
 import haxe.io.Path;
-import sys.io.File;
-import sys.FileSystem;
-
 #if haxe3
 import haxe.zip.Writer;
 #else
 import neko.zip.Writer;
 #end
+import sys.io.File;
+import sys.FileSystem;
 
 
 class ZipHelper {

@@ -168,13 +168,19 @@ class BlackBerryPlatform implements IPlatformTool {
 				
 			}
 			
-			project.haxedefs.push ("html5");
+			project.haxedefs.set ("html5", 1);
 			
 		}
 		
 		if (project.targetFlags.exists ("simulator")) {
 			
-			project.haxedefs.push ("simulator");
+			project.haxedefs.set ("simulator", 1);
+			
+		}
+		
+		if (project.targetFlags.exists ("xml")) {
+			
+			project.haxeflags.push ("-xml " + outputDirectory + "/types.xml");
 			
 		}
 		

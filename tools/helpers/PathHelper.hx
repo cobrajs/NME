@@ -139,7 +139,7 @@ class PathHelper {
 		
 	}
 	
-	
+
 	public static function getHaxelib (haxelib:Haxelib):String {
 		
 		var name = haxelib.name;
@@ -150,7 +150,19 @@ class PathHelper {
 			
 		}
 		
-		var proc = new Process ("haxelib", [ "path", name ]);
+		if (name == "nme") {
+			
+			var nmePath = Sys.getEnv ("NMEPATH");
+			
+			if (nmePath != null && nmePath != "") {
+				
+				return nmePath;
+				
+			}
+			
+		}
+		
+		var proc = new Process (combine (Sys.getEnv ("HAXEPATH"), "haxelib"), [ "path", name ]);
 		var result = "";
 		
 		try {
@@ -439,6 +451,18 @@ class PathHelper {
 			
 			return combine (getHaxelib (ndll.haxelib), "bin/" + directoryName + "/" + filename);
 			
+		} else if (ndll.haxelib.name == "nme") {
+			
+			var path = combine (getHaxelib (ndll.haxelib), "ndll/" + directoryName + "/" + filename);
+			
+			if (!FileSystem.exists (path)) {
+				
+				path = combine (getHaxelib (new Haxelib ("nmedev")), "ndll/" + directoryName + "/" + filename);
+				
+			}
+			
+			return path;
+			
 		} else {
 			
 			return combine (getHaxelib (ndll.haxelib), "ndll/" + directoryName + "/" + filename);
@@ -461,6 +485,6 @@ class PathHelper {
 		}
 		
 	}
-		
+	
 
 }

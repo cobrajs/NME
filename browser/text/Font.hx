@@ -6,7 +6,6 @@ import browser.text.FontStyle;
 import browser.text.FontType;
 import browser.text.TextFormat;
 import browser.display.Graphics;
-import browser.Html5Dom;
 import haxe.Unserializer;
 import haxe.Resource;
 
@@ -17,6 +16,7 @@ typedef IntMap<T> = IntHash<T>;
 #end
 
 
+@:autoBuild(nme.Assets.embedFont())
 class Font {
 	
 	

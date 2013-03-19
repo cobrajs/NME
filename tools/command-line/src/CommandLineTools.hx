@@ -19,30 +19,30 @@ import platforms.WindowsPlatform;
 import sys.io.File;
 import sys.io.Process;
 import sys.FileSystem;
-
-#if haxe3
-import haxe.ds.StringMap;
-#else
+import utils.PlatformSetup;
 import NMEProject;
-#end
 	
 	
 class CommandLineTools {
-	
-	
-	public static var additionalArguments:Array <String>;
-	public static var architectures:Array <Architecture>;
-	public static var command:String;
-	public static var debug:Bool;
-	public static var haxeflags:Array <String>;
-	public static var includePaths:Array <String>;
+
 	public static var nme:String;
-	public static var project:NMEProject;
-	public static var targetFlags:StringMap <String>;
-	public static var traceEnabled:Bool;
-	public static var userDefines:StringMap <String>;
-	public static var version:String;
-	public static var words:Array <String>;
+	
+	private static var additionalArguments:Array <String>;
+	private static var architectures:Array <Architecture>;
+	private static var command:String;
+	private static var debug:Bool;
+	private static var sources:Array <String>;
+	private static var haxelibs:Array <Haxelib>;
+	private static var haxedefs:Array <String>;
+	private static var haxeflags:Array <String>;
+	private static var includePaths:Array <String>;
+	private static var project:NMEProject;
+	private static var projectDefines:StringMap <String>;
+	private static var targetFlags:StringMap <String>;
+	private static var traceEnabled:Bool;
+	private static var userDefines:StringMap <Dynamic>;
+	private static var version:String;
+	private static var words:Array <String>;
 	
 	
 	private static function buildProject () {
@@ -362,7 +362,7 @@ class CommandLineTools {
 		Sys.println ("  -debug : Use debug configuration instead of release");
 		Sys.println ("  -verbose : Print additional information (when available)");
 		Sys.println ("  -clean : Add a \"clean\" action before running the current command");
-		//Sys.println ("  -xml : Generate XML type information, can be used with \"document\"");
+		Sys.println ("  -xml : Generate XML type information, useful for documentation");
 		Sys.println ("  [windows|mac|linux] -neko : Build with Neko instead of C++");
 		Sys.println ("  [linux] -64 : Compile for 64-bit instead of 32-bit");
 		Sys.println ("  [android] -arm7 : Compile for arm-7a and arm5");
@@ -817,21 +817,84 @@ class CommandLineTools {
 		
 		project.merge (config);
 		
-		project.architectures = project.architectures.concat (architectures);
-		project.haxeflags = project.haxeflags.concat (haxeflags);
-		project.haxedefs.push ("nme_install_tool");
+		if (architectures.length > 0) {
+			
+			project.architectures = architectures;
+			
+		}
 		
-		for (key in userDefines.keys ()) {
-			
-			var value = userDefines.get (key);
-			
-			if (value == "") {
+		project.haxeflags = project.haxeflags.concat (haxeflags);
+		project.haxelibs = project.haxelibs.concat(haxelibs);
+		project.sources = project.sources.concat(sources);
+		
+		project.haxedefs.set ("nme_install_tool", 1);
+		project.haxedefs.set ("nme_ver", version);
+		project.haxedefs.set ("nme" + version.split (".")[0], 1);
+		
+		for (haxedef in haxedefs) {
+
+			if (!project.haxedefs.exists (haxedef)) {
 				
-				project.haxedefs.push (key);
+				project.haxedefs.set (haxedef, 1);
+				
+			}
+
+		}
+
+		for (key in projectDefines.keys ()) {
+			
+			var components = key.split ("-");
+			var field = components.shift ().toLowerCase ();
+			var attribute = "";
+			
+			if (components.length > 0) {
+				
+				for (i in 1...components.length) {
+					
+					components[i] = components[i].substr (0, 1).toUpperCase () + components[i].substr (1).toLowerCase ();
+					
+				}
+				
+				attribute = components.join ("");
+				
+			}
+
+
+			if (field == "template" && attribute == "path") {
+						
+				project.templatePaths.push (projectDefines.get (key));
+						
+			} else {
+				
+				if (Reflect.hasField (project, field)) {
+					
+					var fieldValue = Reflect.field (project, field);
+					
+					if (Reflect.hasField (fieldValue, attribute)) {
+						
+						if (Std.is (Reflect.field (fieldValue, attribute), String)) {
+							
+							Reflect.setField (fieldValue, attribute, projectDefines.get (key));
+							
+						} else if (Std.is (Reflect.field (fieldValue, attribute), Float)) {
+							
+							Reflect.setField (fieldValue, attribute, Std.parseFloat (projectDefines.get (key)));
+							
+						} else if (Std.is (Reflect.field (fieldValue, attribute), Bool)) {
+							
+							Reflect.setField (fieldValue, attribute, (projectDefines.get (key).toLowerCase () == "true" || projectDefines.get (key) == "1"));
+							
+						}
+						
+					}
+					
+				}
 				
 			}
 			
 		}
+		
+		StringMapHelper.copyKeys (userDefines, project.haxedefs);
 		
 		SWFHelper.preprocess (project);
 		XFLHelper.preprocess (project);
@@ -874,11 +937,15 @@ class CommandLineTools {
 		architectures = new Array <Architecture> ();
 		command = "";
 		debug = false;
+		sources = new Array <String> ();
+		haxelibs = new Array <Haxelib> ();
+		haxedefs = new Array <String> ();
 		haxeflags = new Array <String> ();
 		includePaths = new Array <String> ();
+		projectDefines = new StringMap <String> ();
 		targetFlags = new StringMap <String> ();
 		traceEnabled = true;
-		userDefines = new StringMap <String> ();
+		userDefines = new StringMap <Dynamic> ();
 		words = new Array <String> ();
 		
 		processArguments ();
@@ -890,26 +957,6 @@ class CommandLineTools {
 			Sys.println ("");
 			
 		}
-		
-		/*if (userDefines.exists ("debug")) {
-			
-			debug = true;
-			
-		}
-		
-		if (Sys.environment ().exists ("HOME")) {
-			
-			includePaths.push (Sys.getEnv ("HOME"));
-			
-		}
-		
-		if (Sys.environment ().exists ("USERPROFILE")) {
-			
-			includePaths.push (Sys.getEnv ("USERPROFILE"));
-			
-		}
-		
-		includePaths.push (nme + "/tools/command-line");*/
 		
 		switch (command) {
 			
@@ -965,13 +1012,32 @@ class CommandLineTools {
 		
 		var arguments = Sys.args ();
 		
+		nme = PathHelper.getHaxelib (new Haxelib ("nme"));
+		
+		var lastCharacter = nme.substr ( -1, 1);
+		
+		if (lastCharacter == "/" || lastCharacter == "\\") {
+			
+			nme = nme.substr (0, -1);
+			
+		}
+
 		if (arguments.length > 0) {
 			
 			// When the command-line tools are called from haxelib, 
 			// the last argument is the project directory and the
 			// path to NME is the current working directory 
 			
-			var lastArgument = new Path (arguments[arguments.length - 1]).toString ();
+			var lastArgument = "";
+			
+			for (i in 0...arguments.length) {
+				
+				lastArgument = arguments.pop ();
+				if (lastArgument.length > 0) break;
+				
+			}
+			
+			lastArgument = new Path (lastArgument).toString ();
 			
 			if (((StringTools.endsWith (lastArgument, "/") && lastArgument != "/") || StringTools.endsWith (lastArgument, "\\")) && !StringTools.endsWith (lastArgument, ":\\")) {
 				
@@ -981,18 +1047,7 @@ class CommandLineTools {
 			
 			if (FileSystem.exists (lastArgument) && FileSystem.isDirectory (lastArgument)) {
 				
-				nme = Sys.getCwd ();
-				
-				var lastCharacter = nme.substr (-1, 1);
-				
-				if (lastCharacter == "/" || lastCharacter == "\\") {
-					
-					nme = nme.substr (0, -1);
-					
-				}
-				
 				Sys.setCwd (lastArgument);
-				arguments.pop ();
 				
 			}
 			
@@ -1002,7 +1057,7 @@ class CommandLineTools {
 		var catchHaxeFlag = false;
 		
 		for (argument in arguments) {
-			
+
 			var equals = argument.indexOf ("=");
 			
 			if (catchHaxeFlag) {
@@ -1015,14 +1070,60 @@ class CommandLineTools {
 				additionalArguments.push (argument);
 				
 			} else if (equals > 0) {
+
+				var argValue = argument.substr (equals + 1);
+				// if quotes remain on the argValue we need to strip them off
+				// otherwise the compiler really dislikes the result!
+				var r = ~/^['"](.*)['"]$/;
+				if (r.match(argValue)) {
+					argValue = r.matched(1);
+				}
 				
 				if (argument.substr (0, 2) == "-D") {
 					
-					userDefines.set (argument.substr (2, equals - 2), argument.substr (equals + 1));
+					userDefines.set (argument.substr (2, equals - 2), argValue);
 					
+				} else if (argument.substr (0, 2) == "--") {
+					
+					// this won't work because it assumes there is only ever one of these.
+					//projectDefines.set (argument.substr (2, equals - 2), argValue);
+					
+					var field = argument.substr (2, equals - 2);
+
+					if (field == "haxedef") {
+
+						haxedefs.push(argValue);
+						
+					} else if (field == "haxeflag") {
+						
+						haxeflags.push (argValue);
+						
+					} else if (field == "haxelib") {
+						
+						var name = argValue;
+						var version = "";
+						
+						if (name.indexOf (":") > -1) {
+							
+							version = name.substr (name.indexOf (":") + 1);
+							name = name.substr (0, name.indexOf (":"));
+							
+						}
+
+						haxelibs.push (new Haxelib (name, version));
+						
+					} else if (field == "source") {
+						
+						sources.push (argValue);
+						
+					} else {
+
+						projectDefines.set (field, argValue);
+					}
+
 				} else {
 					
-					userDefines.set (argument.substr (0, equals), argument.substr (equals + 1));
+					userDefines.set (argument.substr (0, equals), argValue);
 					
 				}
 				
@@ -1040,6 +1141,10 @@ class CommandLineTools {
 			} else if (argument == "-64") {
 				
 				architectures.push (Architecture.X64);
+				
+			} else if (argument == "-32") {
+				
+				architectures.push (Architecture.X86);
 				
 			} else if (argument.substr (0, 2) == "-D") {
 				
@@ -1100,7 +1205,20 @@ class CommandLineTools {
 	
 	private static function platformSetup ():Void {
 		
-		
+		if (words.length == 0) {
+			
+			PlatformSetup.run ();
+			
+		} else if (words.length == 1) {
+			
+			PlatformSetup.run (words[0]);
+			
+		} else {
+			
+			LogHelper.error ("Incorrect number of arguments for command 'setup'");
+			return;
+			
+		}
 		
 	}
 	

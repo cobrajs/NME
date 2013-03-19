@@ -1,7 +1,6 @@
 package;
 
 
-import format.xfl.dom.DOMBitmapItem;
 import format.XFL;
 import haxe.io.Path;
 import haxe.xml.Fast;
@@ -10,31 +9,27 @@ import sys.FileSystem;
 import NMEProject;
 import PlatformConfig;
 
-#if haxe3
-import haxe.ds.StringMap;
-#end
-
 
 class NMMLParser extends NMEProject {
 	
 	
-	public var localDefines:StringMap <String>;
+	public var localDefines:StringMap <Dynamic>;
 	public var includePaths:Array <String>;
 	
 	private static var varMatch = new EReg("\\${(.*?)}", "");
 	
 	
-	public function new (path:String = "", defines:StringMap <String> = null, includePaths:Array <String> = null, useExtensionPath:Bool = false) {
+	public function new (path:String = "", defines:StringMap <Dynamic> = null, includePaths:Array <String> = null, useExtensionPath:Bool = false) {
 		
 		super ();
 		
 		if (defines != null) {
 			
-			localDefines = defines;
+			localDefines = StringMapHelper.copy (defines);
 			
 		} else {
 			
-			localDefines = new StringMap <String> ();
+			localDefines = new StringMap <Dynamic> ();
 			
 		}
 		
@@ -87,6 +82,14 @@ class NMMLParser extends NMEProject {
 			
 		}
 		
+		localDefines.set ("haxe3", "1");
+		
+		if (command != null) {
+			
+			localDefines.set (command.toLowerCase (), "1");
+			
+		}
+		
 		if (localDefines.exists ("SWF_PLAYER")) {
 			
 			environment.set ("SWF_PLAYER", localDefines.get ("SWF_PLAYER"));
@@ -119,7 +122,7 @@ class NMMLParser extends NMEProject {
 					var check = StringTools.trim (required);
 					
 					if (check != "" && !localDefines.exists (check)) {
-
+						
 						isValid = false;
 						
 					}
@@ -145,13 +148,13 @@ class NMMLParser extends NMEProject {
 				for (required in requiredDefines) {
 					
 					var check = StringTools.trim (required);
-
+					
 					if (check != "" && localDefines.exists (check)) {
 						
 						isValid = false;
 						
 					}
-
+					
 				}
 				
 			}
@@ -265,7 +268,6 @@ class NMMLParser extends NMEProject {
 				
 				case "path":
 					
-					//defines.set ("BUILD_DIR", substitute (element.att.path));
 					app.path = substitute (element.att.path);
 				
 				case "min-swf-version":
@@ -277,28 +279,18 @@ class NMMLParser extends NMEProject {
 						app.swfVersion = version;
 						
 					}
-					
-					/*if (!defines.exists ("SWF_VERSION") || Std.parseInt (defines.get ("SWF_VERSION")) <= Std.parseInt (version)) {
-						
-						defines.set ("SWF_VERSION", version);
-						
-					}*/
 				
 				case "swf-version":
 					
-					//defines.set ("SWF_VERSION", substitute (element.att.resolve ("swf-version")));
 					app.swfVersion = Std.parseFloat (substitute (element.att.resolve ("swf-version")));
 				
 				case "preloader":
 					
-					//defines.set ("PRELOADER_NAME", substitute (element.att.preloader));
 					app.preloader = substitute (element.att.preloader);
 				
 				default:
 					
 					// if we are happy with this spec, we can tighten up this parsing a bit, later
-					
-					//defines.set ("APP_" + StringTools.replace (attribute.toUpperCase (), "-", "_"), substitute (element.att.resolve (attribute)));
 					
 					var name = formatAttributeName (attribute);
 					var value = substitute (element.att.resolve (attribute));
@@ -404,7 +396,6 @@ class NMMLParser extends NMEProject {
 					
 				}
 				
-				//assets.push (new Asset (path, targetPath, type, id, embed));
 				var asset = new Asset (path, targetPath, type);
 				asset.id = id;
 				
@@ -548,7 +539,6 @@ class NMMLParser extends NMEProject {
 						
 					}
 					
-					//assets.push (new Asset (path + childPath, targetPath + childTargetPath, childType, id, childEmbed));
 					var asset = new Asset (path + childPath, targetPath + childTargetPath, childType);
 					asset.id = id;
 					
@@ -593,7 +583,6 @@ class NMMLParser extends NMEProject {
 				
 				if (filter (file, include.split ("|"), exclude.split ("|"))) {
 					
-					//assets.push (new Asset (path + "/" + file, targetPath + file, type, "", embed));
 					var asset = new Asset (path + "/" + file, targetPath + file, type);
 					
 					if (glyphs != null) {
@@ -651,21 +640,18 @@ class NMMLParser extends NMEProject {
 		if (element.has.name) {
 			
 			app.file = substitute (element.att.name);
-			//defines.set ("APP_FILE", substitute (element.att.name));
 			
 		}
 		
 		if (element.has.path) {
 			
 			app.path = substitute (element.att.path);
-			//defines.set ("BUILD_DIR", substitute (element.att.path));
 			
 		}
 		
 		if (element.has.resolve ("swf-version")) {
 			
 			app.swfVersion = Std.parseFloat (substitute (element.att.resolve ("swf-version")));
-			//defines.set ("SWF_VERSION", substitute (element.att.resolve ("swf-version")));
 			
 		}
 		
@@ -1041,67 +1027,24 @@ class NMMLParser extends NMEProject {
 							
 						}
 						
-						/*if (useFullClassPaths ()) {
-							
-							path = FileSystem.fullPath (path);
-							
-						}*/
-                      
-						//compilerFlags.push ("-cp " + path);
-						
 						sources.push (path);
 					
 					case "extension":
 						
-						// deprecated -- use <haxelib name="sqlite"/> or <include path="path/to/sqlite/include.nmml" /> instead
-						
-						/*var name:String = null;
-						var path:String = null;
-						
-						if (element.has.haxelib) {
-							
-							name = substitute (element.att.haxelib);
-							path = Utils.getHaxelib (name);
-							
-						} else {
-							
-							name = substitute (element.att.name);
-							path = extensionPath + substitute (element.att.path);
-							
-						}
-						
-						if (name != "" && path != null) {
-							
-							var includePath = findIncludeFile (path + "/" + name + ".xml");
-							
-							if (includePath != "") {
-								
-								var xml:Fast = new Fast (Xml.parse (File.getContent (includePath)).firstElement ());
-								
-								parseXML (xml, "", path + "/");
-								
-							} else {
-								
-								var ndll = new NDLL (name, "nme-extension");
-								ndll.extension = path;
-								ndlls.push (ndll);
-								
-								if (useFullClassPaths ()) {
-									
-									path = FileSystem.fullPath (path);
-									
-								}
-								
-								compilerFlags.push ("-cp " + path);
-								
-							}
-							
-						}*/
+						// deprecated
 					
 					case "haxedef":
 						
-						//compilerFlags.push("-D " + substitute (substitute (element.att.name)));
-						haxedefs.push (substitute (substitute (element.att.name)));
+						var name = substitute (element.att.name);
+						var value = "";
+						
+						if (element.has.value) {
+							
+							value = substitute (element.att.value);
+							
+						}
+						
+						haxedefs.set (name, value);
 					
 					case "haxeflag", "compilerflag":
 						
@@ -1113,7 +1056,6 @@ class NMMLParser extends NMEProject {
 							
 						}
 						
-						//compilerFlags.push (substitute (flag));
 						haxeflags.push (substitute (flag));
 					
 					case "window":
@@ -1150,18 +1092,35 @@ class NMMLParser extends NMEProject {
 					
 					case "template":
 						
-						parseAssetsElement (element, extensionPath, true);
+						if (element.has.path) {
+							
+							var path = PathHelper.combine (extensionPath, substitute (element.att.path));
+							
+							if (FileSystem.exists (path) && !FileSystem.isDirectory (path)) {
+								
+								parseAssetsElement (element, extensionPath, true);
+								
+							} else {
+								
+								templatePaths.push (path);
+								
+							}
+							
+						} else {
+							
+							parseAssetsElement (element, extensionPath, true);
+							
+						}
 					
 					case "templatePath":
 						
-						templatePaths.push (substitute(element.att.name));
+						templatePaths.push (PathHelper.combine (extensionPath, substitute (element.att.name)));
 					
 					case "preloader":
 						
 						// deprecated
 						
 						app.preloader = substitute (element.att.name);
-						//defines.set ("PRELOADER_NAME", substitute (element.att.name));
 					
 					case "output":
 						
@@ -1172,37 +1131,6 @@ class NMMLParser extends NMEProject {
 						parseXML (element, "");
 					
 					case "certificate":
-						
-						/*defines.set ("KEY_STORE", substitute (element.att.path));
-						
-						if (element.has.type) {
-							
-							defines.set ("KEY_STORE_TYPE", substitute (element.att.type));
-							
-						}
-						
-						if (element.has.password) {
-							
-							defines.set ("KEY_STORE_PASSWORD", substitute (element.att.password));
-							
-							
-						}
-						
-						if (element.has.alias) {
-							
-							defines.set ("KEY_STORE_ALIAS", substitute (element.att.alias));
-							
-						}
-						
-						if (element.has.resolve ("alias-password")) {
-							
-							defines.set ("KEY_STORE_ALIAS_PASSWORD", substitute (element.att.resolve ("alias-password")));
-							
-						} else if (element.has.alias_password) {
-							
-							defines.set ("KEY_STORE_ALIAS_PASSWORD", substitute (element.att.alias_password));
-							
-						}*/
 						
 						certificate = new Keystore (substitute (element.att.path));
 						
@@ -1236,7 +1164,6 @@ class NMMLParser extends NMEProject {
 					
 					case "dependency":
 						
-						//dependencyNames.push (substitute (element.att.name));
 						dependencies.push (substitute (element.att.name));
 					
 					case "ios":
@@ -1247,12 +1174,8 @@ class NMMLParser extends NMEProject {
 								
 								var deployment = Std.parseFloat (substitute (element.att.deployment));
 								
-								if (deployment > config.ios.deployment) {
-									
-									config.ios.deployment = deployment;
-									
-								}
-								
+								// If it is specified, assume the dev knows what he is doing!
+								config.ios.deployment = deployment;
 							}
 							
 							if (element.has.binaries) {
@@ -1371,7 +1294,6 @@ class NMMLParser extends NMEProject {
 					}
 				
 			}
-			//defines.set ("WIN_" + attribute.toUpperCase (), substitute (element.att.resolve (attribute)));
 			
 		}
 		

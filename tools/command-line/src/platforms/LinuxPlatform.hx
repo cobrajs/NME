@@ -78,7 +78,7 @@ class LinuxPlatform implements IPlatformTool {
 		
 		if (isRaspberryPi) {
 			
-			project.haxedefs.push ("rpi");
+			project.haxedefs.set ("rpi", 1);
 			
 		}
 		
@@ -160,7 +160,13 @@ class LinuxPlatform implements IPlatformTool {
 		
 		if (is64) {
 			
-			project.haxedefs.push ("HXCPP_M64");
+			project.haxedefs.set ("HXCPP_M64", 1);
+			
+		}
+		
+		if (project.targetFlags.exists ("xml")) {
+			
+			project.haxeflags.push ("-xml " + targetDirectory + "/types.xml");
 			
 		}
 		

@@ -7,6 +7,7 @@ import browser.display.BitmapData;
 import browser.display.DisplayObject;
 import browser.display.LoaderInfo;
 import browser.display.Shape;
+import browser.display.Sprite;
 import browser.events.Event;
 import browser.events.IOErrorEvent;
 import browser.geom.Rectangle;
@@ -15,7 +16,7 @@ import browser.system.LoaderContext;
 import browser.utils.ByteArray;
 
 
-class Loader extends DisplayObjectContainer {
+class Loader extends Sprite {
 	
 	
 	public var content(default, null):DisplayObject;
@@ -77,6 +78,7 @@ class Loader extends DisplayObjectContainer {
 			
 			trace("Error " + e);
 			var evt = new IOErrorEvent(IOErrorEvent.IO_ERROR);
+			evt.currentTarget = this;
 			contentLoaderInfo.dispatchEvent(evt);
 			return;
 			
@@ -103,7 +105,9 @@ class Loader extends DisplayObjectContainer {
 				content = new Bitmap(bmd);
 				Reflect.setField(contentLoaderInfo, "content", this.content);
 				addChild(content);
-				contentLoaderInfo.dispatchEvent(new Event(Event.COMPLETE));
+				var evt = new Event(Event.COMPLETE);
+				evt.currentTarget = this;
+				contentLoaderInfo.dispatchEvent(evt);
 				
 			});
 			
@@ -111,6 +115,7 @@ class Loader extends DisplayObjectContainer {
 			
 			trace("Error " + e);
 			var evt = new IOErrorEvent(IOErrorEvent.IO_ERROR);
+			evt.currentTarget = this;
 			contentLoaderInfo.dispatchEvent(evt);
 			
 		}
@@ -167,6 +172,7 @@ class Loader extends DisplayObjectContainer {
 	
 	private function handleLoad(e:Event):Void {
 		
+		e.currentTarget = this;
 		content.nmeInvalidateBounds();
 		content.nmeRender(null, null);
 		contentLoaderInfo.removeEventListener(Event.COMPLETE, handleLoad);

@@ -21,7 +21,7 @@ class FlashHelper {
 	private static var swfAssetID = 1000;
 	
 	
-	private static function embedAsset (inAsset:Asset, outTags:Array<SWFTag>) {
+	private static function embedAsset (inAsset:Asset, packageName:String, outTags:Array<SWFTag>) {
 		
 		var embed = inAsset.embed;
 		var name = inAsset.sourcePath;
@@ -132,7 +132,7 @@ class FlashHelper {
 					rate: flashSamplingFrequency,
 					is16bit: true,
 					isStereo: isStereo,
-					samples: #if !haxe3 haxe.Int32.ofInt( #end totalLengthSamples - endPadding - encoderDelay #if !haxe3 ) #end,
+					samples: #if !haxe3 haxe.Int32.ofInt ( #end totalLengthSamples - endPadding - encoderDelay #if !haxe3 ) #end,
 					data: SDMp3(encoderDelay + decoderDelay, frameData)
 				};
 				
@@ -199,7 +199,7 @@ class FlashHelper {
 							rate : flashRate,
 							is16bit : is16bit,
 							isStereo : isStereo,
-							samples : #if (haxe3) sampleCount #else haxe.Int32.ofInt (sampleCount) #end,
+							samples : #if !haxe3 haxe.Int32.ofInt ( #end sampleCount #if !haxe3 ) #end,
 							data : SDRaw (wav.data)
 							
 						}
@@ -394,55 +394,63 @@ class FlashHelper {
 			
 		}
 		
-		outTags.push (TSymbolClass ( [ { cid:cid, className:"NME_" + flatName } ] ));
+		outTags.push (TSymbolClass ( [ { cid:cid, className: packageName + "NME_" + flatName } ] ));
 		
 		return true;
 		
 	}
 	
 	
-	public static function embedAssets (targetPath:String, assets:Array <Asset>):Void {
-		
-		var input = File.read (targetPath, true);
-		var reader = new Reader (input);
-		var swf = reader.read ();
-		input.close();
-		
-		var new_tags = new Array <SWFTag> ();
-		var inserted = false;
-		
-		for (tag in swf.tags) {
-			
-			var name = Type.enumConstructor(tag);
-			
-			if (name == "TShowFrame" && !inserted && assets.length > 0) {
+	public static function embedAssets (targetPath:String, assets:Array <Asset>, packageName:String = ""):Void {
+
+		try {
+			var input = File.read (targetPath, true);
+			if (input != null) {
+				var reader = new Reader (input);
+				var swf = reader.read ();
+				input.close();
 				
-				new_tags.push (TShowFrame);
+				var new_tags = new Array <SWFTag> ();
+				var inserted = false;
 				
-				for (asset in assets) {
+				for (tag in swf.tags) {
 					
-					if (asset.type != AssetType.TEMPLATE && embedAsset (asset, new_tags)) {
+					var name = Type.enumConstructor(tag);
+					
+					if (name == "TShowFrame" && !inserted && assets.length > 0) {
 						
-						inserted = true;
+						new_tags.push (TShowFrame);
+						
+						for (asset in assets) {
+							
+							if (asset.type != AssetType.TEMPLATE && embedAsset (asset, packageName, new_tags)) {
+								
+								inserted = true;
+								
+							}
+							
+						}
 						
 					}
 					
+					new_tags.push (tag);
+					
 				}
-				
-			}
-			
-			new_tags.push (tag);
-			
-		}
 
-		if (inserted) {
-			
-			swf.tags = new_tags;
-			var output = File.write (targetPath, true);
-			var writer = new Writer (output);
-			writer.write (swf);
-			output.close ();
-			
+				if (inserted) {
+					
+					swf.tags = new_tags;
+					var output = File.write (targetPath, true);
+					var writer = new Writer (output);
+					writer.write (swf);
+					output.close ();
+					
+				}
+			} else {
+				trace("Embedding assets failed! We encountered an error. Does '"+targetPath+"' exist?");
+			}
+		} catch (e:Dynamic) {
+			trace("Embedding assets failed! We encountered an error accessing '"+targetPath+"': " + e);
 		}
 		
 	}
