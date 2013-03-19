@@ -13,6 +13,7 @@ import platforms.IOSPlatform;
 import platforms.IPlatformTool;
 import platforms.LinuxPlatform;
 import platforms.MacPlatform;
+import platforms.PandoraPlatform;
 import platforms.WebOSPlatform;
 import platforms.WindowsPlatform;
 import sys.io.File;
@@ -88,6 +89,10 @@ class CommandLineTools {
 			case HTML5:
 				
 				platform = new HTML5Platform ();
+
+			case PANDORA:
+				
+				platform = new PandoraPlatform ();
 			
 		}
 		
@@ -347,6 +352,7 @@ class CommandLineTools {
 		Sys.println ("  ios : Create Apple iOS applications");
 		Sys.println ("  linux : Create Linux applications");
 		Sys.println ("  mac : Create Apple Mac OS X applications");
+		Sys.println ("  pandora : Create Pandora applications");
 		Sys.println ("  webos : Create HP webOS applications");
 		Sys.println ("  windows : Create Microsoft Windows applications");
 		Sys.println ("");

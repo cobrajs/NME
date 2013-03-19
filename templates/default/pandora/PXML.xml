@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PXML xmlns="http://openpandora.org/namespaces/PXML">
+  <package id="::APP_FILE::">
+    <version major="0" minor="1" release="1" build="1"/>
+    <author name="::APP_COMPANY::"/>
+    <titles>
+      <title lang="en_US">::APP_TITLE::</title>
+    </titles>
+    <descriptions>
+      <description lang="en_US">::APP_DESCRIPTION::</description>
+    </descriptions>
+    <!--
+    <icon src="icon.png" />
+    -->
+  </package>
+  <application id="::APP_FILE::">
+    <exec command="::APP_FILE::" x11="req"/>
+    <version major="0" minor="1" release="1" build="1"/>
+    <author name="::APP_COMPANY::"/>
+    <titles>
+      <title lang="en_US">::APP_TITLE::</title>
+    </titles>
+    <title lang="en_US">::APP_TITLE::</title>
+    <descriptions>
+      <description lang="en_US">::APP_DESCRIPTION::</description>
+    </descriptions>
+    <description lang="en_US">::APP_DESCRIPTION::</description>
+    <licenses>
+      <license name="GPLv2+" url="http://www.gnu.org/licenses/gpl-2.0.html"/>
+    </licenses>
+    <!--
+    <icon src="icon.png" />
+    <previewpics>
+      <pic src="preview-image.png"/>
+    </previewpics>
+    <info name="Readme" type="text/html" src="readme.html"/>
+    -->
+    
+    <categories>
+      <category name="::APP_CATEGORY::"/>
+    </categories>
+  </application>
+</PXML>

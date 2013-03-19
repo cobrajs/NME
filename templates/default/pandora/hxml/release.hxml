@@ -1,0 +1,6 @@
+-main ApplicationMain ::HAXE_FLAGS::
+-cp ::BUILD_DIR::/pandora/haxe
+-D pandora
+-cpp ::CPP_DIR::
+--remap flash:nme
+

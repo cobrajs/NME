@@ -14,6 +14,7 @@
    <set name="sdl" value="1" if="win_desktop" />
    <set name="sdl" value="1" if="webos"/>
    <set name="sdl" value="1" if="blackberry"/>
+   <set name="sdl" value="1" if="pandora"/>
    <set name="ogl" value="1" if="win_desktop" />
    <set name="ogl" value="1" if="sdl"/>
    <set name="ogl" value="1" if="gph"/>
@@ -32,6 +33,7 @@
    <set name="mobile" value="1" if="webos"/>
    <set name="mobile" value="1" if="blackberry"/>
    <set name="mobile" value="1" if="gph"/>
+   <set name="mobile" value="1" if="pandora"/>
    
    <set name="ssl" value="1" unless="nossl"/>
    <set name="ssl_extra" value="_ssl" if="ssl"/>
@@ -93,6 +95,18 @@
       
    </files>
    
+   <files id="pandora">
+      
+      <compilerflag value="-Iinclude"/>
+      <compilerflag value="-I/usr/include" if="pandora"/>
+      <compilerflag value="-I${PANDORA_ROOT}/include" if="pandora"/>
+      <compilerflag value="-I${PANDORA_ROOT}/arm-angstrom-linux-gnueabi/usr/include" if="pandora"/>
+      <compilerflag value="-I${PANDORA_ROOT}/arm-angstrom-linux-gnueabi/usr/include/freetype2" if="pandora"/>
+      <compilerflag value="-I${PANDORA_ROOT}/arm-angstrom-linux-gnueabi/usr/include/SDL" if="pandora"/>
+      <file name="linux/NativeFont.cpp"/>
+      <file name="linux/System.cpp"/>
+      
+   </files>
    
    <files id="iphone">
       
@@ -162,9 +176,11 @@
    <set name="THIRDPARTY_LIBS" value="../../sdl-static/lib/iPhone/" if="iphone"/>
    <set name="THIRDPARTY_LIBS" value="../../sdl-static/lib/BlackBerry/" if="blackberry"/>
    <set name="THIRDPARTY_LIBS" value="${GPH_ROOT}/gcc-4.2.4-glibc-2.7-eabi/arm-gph-linux-gnueabi/sys-root/usr/lib/" if="gph"/>
+   <set name="THIRDPARTY_LIBS" value="${PANDORA_ROOT}/arm-angstrom-linux-gnueabi/usr/lib/" if="pandora"/>
    
    <set name="SLIBEXT" value=".lib" if="windows"/>
    <set name="SLIBEXT" value=".a" unless="windows"/>
+   <set name="SLIBEXT" value=".so" if="pandora"/>
    <set name="SLIBEXT" value=".so" if="webos"/>
    
    
@@ -270,6 +286,7 @@
    
    <set name="no_thirdparty_extras" value="1" if="iphone"/>
    <set name="no_thirdparty_extras" value="1" if="gph"/>
+   <set name="no_thirdparty_extras" value="1" if="pandora"/>
    
    <set name="sdl_static" value="1" unless="mobile"/>
    <set name="sdl_static" value="1" if="blackberry"/>
@@ -323,6 +340,7 @@
       <outdir name="../ndll/${BINDIR}" />
       <ext value=".ndll" unless="mobile"/>
       <ext value=".ndll" if="gph"/>
+      <ext value=".ndll" if="pandora"/>
 
       <flag value="-NODEFAULTLIB:LIBCMT" if="winrt"/>
       
@@ -335,6 +353,7 @@
       <files id="mac" if="macos"/>
       <files id="linux" if="linux"/>
       <files id="gph" if="gph"/>
+      <files id="pandora" if="pandora"/>
       <files id="sdl" if="sdl"/>
       <files id="android" if="android"/>
       <files id="webos" if="webos"/>
@@ -442,6 +461,22 @@
       <lib name="-lpng" if="gph"/>
       <lib name="-ljpeg" if="gph"/>
       <lib name="-lz" if="gph"/>
+
+
+      <lib name="-lGLESv2" if="pandora"/>
+      <lib name="-lGLES_CM" if="pandora"/>
+      <lib name="-lcurl" if="pandora"/>
+      <lib name="-lfreetype" if="pandora"/>
+      <lib name="-lts" if="pandora"/>
+      <lib name="-lSDL" if="pandora"/>
+      <lib name="-lSDL_mixer" if="pandora"/>
+      <lib name="-lrt" if="pandora"/>
+      <lib name="-lpthread" if="pandora"/>
+      <lib name="-ldl" if="pandora"/>
+      <lib name="-lpng" if="pandora"/>
+      <lib name="-ljpeg" if="pandora"/>
+      <lib name="-lz" if="pandora"/>
+      <lib name="-lX11" if="pandora"/>
       
    </target>
    

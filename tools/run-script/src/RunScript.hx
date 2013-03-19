@@ -311,6 +311,22 @@ class RunScript {
 					
 				}
 			
+      case "pandora":
+
+				//mkdir (nmeDirectory + "/ndll/Pandora");
+
+				if (!flags.exists ("debug")) {
+					
+					runCommand (path, "haxelib", [ "run", "hxcpp", "Build.xml" ].concat (defines));
+					
+				}
+				
+				if (!flags.exists ("release")) {
+					
+					runCommand (path, "haxelib", [ "run", "hxcpp", "Build.xml", "-Dfulldebug" ].concat (defines));
+					
+				}
+
 			case "webos":
 				
 				//mkdir (nmeDirectory + "/ndll/webOS");
