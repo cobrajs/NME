@@ -6,6 +6,7 @@ enum Platform {
 	HTML5;
 	IOS;
 	LINUX;
+	PANDORA;
 	MAC;
 	WINDOWS;
 	WEBOS;

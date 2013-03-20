@@ -111,7 +111,7 @@ class NMEProject {
 				
 				defaultWindow.fps = 0;
 				
-			case ANDROID, BLACKBERRY, IOS, WEBOS:
+			case ANDROID, BLACKBERRY, IOS, WEBOS, PANDORA:
 				
 				platformType = PlatformType.MOBILE;
 				
